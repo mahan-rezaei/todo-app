@@ -9,5 +9,5 @@ class User(SQLModel, table=True):
     age: int | None = Field(default=None)
     password: str
 
-    created_at: datetime = Field(default_factory=datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=datetime.now(UTC))
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
