@@ -22,6 +22,8 @@ class OTP(SQLModel, table=True):
     expires_at: datetime
     is_used: bool = False
 
+    created_at: datetime = Field(default_factory=datetime.now)
+
     @classmethod
     def generate(cls, email: str, length=4):
         digits = string.digits
