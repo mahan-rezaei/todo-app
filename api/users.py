@@ -1,19 +1,18 @@
 from fastapi import APIRouter, HTTPException, status
-from schemas.users import UserCreate
+from schemas.users import UserCreate, UserRead, UserLogin
 from dependecies import SessionDep
-from models.users import User
+from models.users import User, OTP
 from sqlmodel import select
 from core.security import Hasher
 from core.jwt_auth import sign_jwt
 from services.smtp import send_email
 from fastapi.background import BackgroundTasks
-from schemas.users import UserLogin
 
 
 router = APIRouter(prefix="/users")
 
 
-@router.post('/register', status_code=status.HTTP_201_CREATED)
+@router.post('/register', status_code=status.HTTP_201_CREATED, response_model=UserRead)
 async def register_user(user: UserCreate, session: SessionDep, background_tasks: BackgroundTasks):
     user_exists = await session.exec(select(User).where(User.email == user.email))
     if user_exists.first():
@@ -24,9 +23,12 @@ async def register_user(user: UserCreate, session: SessionDep, background_tasks:
     session.add(user_instance)
     await session.commit()
     await session.refresh(user_instance)
-    token = sign_jwt(user_instance.email, user_instance.id)
-    background_tasks.add_task(send_email, user_instance.email, "1234")
-    return token
+    otp = OTP.generate(user_instance.email)
+    session.add(otp)
+    await session.commit()
+    await session.refresh(otp)
+    background_tasks.add_task(send_email, user_instance.email, otp.code)
+    return user_instance
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)

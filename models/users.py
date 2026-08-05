@@ -11,6 +11,8 @@ class User(SQLModel, table=True):
     age: int | None = Field(default=None)
     password: str
 
+    is_verified: bool = Field(default=False, nullable=True)
+
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
@@ -30,6 +32,7 @@ class OTP(SQLModel, table=True):
         code = ''.join(secrets.choice(digits) for _ in range(length))
 
         return cls(email=email, code=code, expires_at=datetime.now() + timedelta(minutes=5))
+        
 
     def is_expired(self):
         return datetime.now() > self.expires_at
