@@ -23,3 +23,7 @@ async def register_user(user: UserCreate, session: SessionDep):
     await session.refresh(user_instance)
     token = sign_jwt(user_instance.email, user_instance.id)
     return token
+
+
+async def login_user():
+    pass
