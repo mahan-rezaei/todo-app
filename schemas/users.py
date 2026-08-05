@@ -16,3 +16,8 @@ class UserRead(UserBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str

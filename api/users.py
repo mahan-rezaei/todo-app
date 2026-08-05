@@ -5,13 +5,16 @@ from models.users import User
 from sqlmodel import select
 from core.security import Hasher
 from core.jwt_auth import sign_jwt
+from services.smtp import send_email
+from fastapi.background import BackgroundTasks
+from schemas.users import UserLogin
 
 
 router = APIRouter(prefix="/users")
 
 
 @router.post('/register', status_code=status.HTTP_201_CREATED)
-async def register_user(user: UserCreate, session: SessionDep):
+async def register_user(user: UserCreate, session: SessionDep, background_tasks: BackgroundTasks):
     user_exists = await session.exec(select(User).where(User.email == user.email))
     if user_exists.first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
@@ -22,8 +25,18 @@ async def register_user(user: UserCreate, session: SessionDep):
     await session.commit()
     await session.refresh(user_instance)
     token = sign_jwt(user_instance.email, user_instance.id)
+    background_tasks.add_task(send_email, user_instance.email, "1234")
     return token
 
 
-async def login_user():
-    pass
+@router.post("/login", status_code=status.HTTP_200_OK)
+async def login_user(user: UserLogin, session: SessionDep):
+    user_instance = await session.exec(select(User).where(User.email == user.email))
+    user_instance = user_instance.first()
+    if not user_instance:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="user with this email does not exist.")
+    if Hasher.verify_passwrod(user.password, user_instance.password):
+        token = sign_jwt(user_instance.email, user_instance.id)
+        return token
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="password incorrect.")
