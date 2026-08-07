@@ -21,3 +21,7 @@ class UserRead(UserBase):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+class UserVerify(BaseModel):
+    code: str

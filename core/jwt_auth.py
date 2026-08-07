@@ -21,7 +21,7 @@ def sign_jwt(email, id):
 def decode_jwt(token: str):
     try:
         decoded_token = jwt.decode(token, JWT_SECRET, algorithms=JWT_ALGORITHM)
-        return decode_jwt if decode_jwt['exp'] >= time.time() else None
+        return decoded_token if decoded_token['exp'] >= time.time() else None
     except:
         return {}
 
@@ -35,7 +35,7 @@ class JWTBearer(HTTPBearer):
         if credentials:
             if not credentials.scheme == "Bearer":
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="invalid authentication scheme.")
-            if not self.verify_jwt:
+            if not self.verify_jwt(credentials.credentials):
                 raise HTTPException(status_code=403, detail="invalid or expires token..!")
             return credentials
         else:

@@ -1,12 +1,13 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from schemas.users import UserCreate, UserRead, UserLogin, UserVerify
 from dependecies import SessionDep
 from models.users import User, OTP
 from sqlmodel import select
 from core.security import Hasher
-from core.jwt_auth import sign_jwt
+from core.jwt_auth import sign_jwt, JWTBearer, decode_jwt
 from services.smtp import send_email
 from fastapi.background import BackgroundTasks
+from services.otp import verify_otp
 
 
 router = APIRouter(prefix="/users")
@@ -32,8 +33,26 @@ async def register_user(user: UserCreate, session: SessionDep, background_tasks:
 
 
 @router.post('/verify', status_code=status.HTTP_200_OK)
-async def verify_user(code: UserVerify, session: SessionDep):
-    pass
+async def verify_user(code: UserVerify, session: SessionDep, token=Depends(JWTBearer())):
+    t = decode_jwt(token.credentials)
+    user_instance = await session.exec(select(User).where(User.id==t['identifier']['id']))
+    user_instance = user_instance.first()
+
+    if not user_instance:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user does not exist.")
+    if user_instance.is_verified:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user already verified")
+
+    if await verify_otp(user_instance.email, code.code, session):
+        user_instance.sqlmodel_update({'is_verified': True})
+        session.add(user_instance)
+        await session.commit()
+        await session.refresh(user_instance)
+        return {'detail': "user verified successfuly."}
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="otp was incorrect or expired.")
+   
+
+
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
