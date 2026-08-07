@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from schemas.users import UserCreate, UserRead, UserLogin
+from schemas.users import UserCreate, UserRead, UserLogin, UserVerify
 from dependecies import SessionDep
 from models.users import User, OTP
 from sqlmodel import select
@@ -29,6 +29,11 @@ async def register_user(user: UserCreate, session: SessionDep, background_tasks:
     await session.refresh(otp)
     background_tasks.add_task(send_email, user_instance.email, otp.code)
     return user_instance
+
+
+@router.post('/verify', status_code=status.HTTP_200_OK)
+async def verify_user(code: UserVerify, session: SessionDep):
+    pass
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
