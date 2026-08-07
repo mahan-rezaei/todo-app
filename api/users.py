@@ -63,3 +63,9 @@ async def login_user(user: UserLogin, session: SessionDep):
         token = sign_jwt(user_instance.email, user_instance.id)
         return token
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="password incorrect.")
+
+
+@router.get('/users-list', status_code=status.HTTP_200_OK, response_model=list[UserRead])
+async def users_list(session: SessionDep):
+    users = await session.exec(select(User))
+    return users.all()
