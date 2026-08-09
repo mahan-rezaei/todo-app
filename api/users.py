@@ -13,7 +13,7 @@ from services.otp import verify_otp
 router = APIRouter(prefix="/users")
 
 
-@router.post('/register', status_code=status.HTTP_201_CREATED, response_model=UserRead)
+@router.post('/register', status_code=status.HTTP_201_CREATED)
 async def register_user(user: UserCreate, session: SessionDep, background_tasks: BackgroundTasks):
     user_exists = await session.exec(select(User).where(User.email == user.email))
     if user_exists.first():
@@ -29,7 +29,8 @@ async def register_user(user: UserCreate, session: SessionDep, background_tasks:
     await session.commit()
     await session.refresh(otp)
     background_tasks.add_task(send_email, user_instance.email, otp.code)
-    return user_instance
+    toekn = sign_jwt(user_instance.email, user_instance.id)
+    return toekn
 
 
 @router.post('/verify', status_code=status.HTTP_200_OK)
