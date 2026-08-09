@@ -69,3 +69,14 @@ async def login_user(user: UserLogin, session: SessionDep):
 async def users_list(session: SessionDep):
     users = await session.exec(select(User))
     return users.all()
+
+
+@router.delete('/delete/{user_id}', status_code=status.HTTP_200_OK)
+async def delete_user(user_id: int, session: SessionDep, token=Depends(JWTBearer())):
+    user_instance = await session.exec(select(User).where(User.id==user_id))
+    user_instance = user_instance.first()
+    if not user_instance:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user with this id does not exist.")
+    await session.delete(user_instance)
+    await session.commit()
+    return {'detail': "user delted successfully"}
