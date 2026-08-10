@@ -1,11 +1,30 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
 from dependecies import SessionDep
-from schemas.tasks import TaskCreate
+from schemas.tasks import TaskCreate, TaskRead
+from core.jwt_auth import JWTBearer, decode_jwt
+from sqlmodel import select
+from models.tasks import Task
+from models.users import User
 
 
 router = APIRouter(prefix="/tasks")
 
 
-@router.post('/create')
-async def create_task(task_data: TaskCreate, session: SessionDep):
-    pass
+@router.post('/create', status_code=status.HTTP_201_CREATED, response_model=TaskRead)
+async def create_task(task_data: TaskCreate, session: SessionDep, toekn=Depends(JWTBearer())):
+    t = decode_jwt(toekn.credentials)
+    result = await session.exec(select(User).where(User.id==t['identifier']['id']))
+    user_instance = result.first()
+    if not user_instance:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found.")
+    task = Task(
+        title=task_data.title,
+        description=task_data.description,
+        deadline=task_data.deadline,
+        user=user_instance
+    )
+    task.user = user_instance
+    session.add(task)
+    await session.commit()
+    await session.refresh(task)
+    return task

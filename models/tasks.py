@@ -8,8 +8,8 @@ class Task(SQLModel, table=True):
     description: str | None = Field(default=None, nullable=True)
     deadline: datetime
 
-    user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
     user: "User" = Relationship(back_populates="tasks", sa_relationship_kwargs={"lazy": "selectin"})
+    user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
 
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
