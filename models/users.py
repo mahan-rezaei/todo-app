@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, UTC, timedelta
 import string
 import secrets
@@ -10,6 +10,8 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     age: int | None = Field(default=None)
     password: str
+
+    tasks: list['Task'] = Relationship(cascade_delete=True, back_populates='user')
 
     is_verified: bool = Field(default=False, nullable=True)
 
