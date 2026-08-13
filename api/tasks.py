@@ -30,8 +30,21 @@ async def create_task(task_data: TaskCreate, session: SessionDep, toekn=Depends(
     return task
 
 
+@router.get('/list', status_code=status.HTTP_200_OK, response_model=list[TaskRead])
+async def tasks_list(session: SessionDep):
+    tasks = await session.exec(select(Task))
+    return tasks
+
+
+@router.get('/user-list', status_code=status.HTTP_200_OK, response_model=list[TaskRead])
+async def user_tasks_list(session: SessionDep, token=Depends(JWTBearer())):
+    t = decode_jwt(token.credentials)
+    user_tasks = await session.exec(select(Task).where(Task.user_id==t['identifier']['id']))
+    return user_tasks
+
+
 @router.put('/update/{task_id}', status_code=status.HTTP_200_OK, response_model=TaskRead)
-async def update_task(task_data: TaskCreate, task_id, session: SessionDep, token=Depends(JWTBearer())):
+async def update_task(task_id: int, task_data: TaskCreate, session: SessionDep, token=Depends(JWTBearer())):
     t = decode_jwt(token.credentials)
     user_instance = await session.exec(select(User).where(User.id==t['identifier']['id']))
     user_instance = user_instance.first()
@@ -39,7 +52,7 @@ async def update_task(task_data: TaskCreate, task_id, session: SessionDep, token
 
     if task_instance.user_id != user_instance.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="you are not owner of this task.")
-    task_update_data = Task.model_dump(task_data, exclude_unset=True)
+    task_update_data = task_data.model_dump(exclude_unset=True)
     task_instance.sqlmodel_update(task_update_data)
 
     session.add(task_instance)
