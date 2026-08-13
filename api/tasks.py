@@ -59,3 +59,19 @@ async def update_task(task_id: int, task_data: TaskCreate, session: SessionDep, 
     await session.commit()
     await session.refresh(task_instance)
     return task_instance
+
+
+@router.delete('/delete/{task_id}', status_code=status.HTTP_200_OK)
+async def delete_task(task_id: int, session: SessionDep, token=Depends(JWTBearer())):
+    t = decode_jwt(token.credentials)
+    result = await session.exec(select(Task).where(Task.id==task_id, Task.user_id==t['identifier']['id']))
+    task = result.first()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="task not found.")
+    await session.delete(task)
+    await session.commit()
+    return {'detail': "task deleted successfully."}
+
+    
+
+    
