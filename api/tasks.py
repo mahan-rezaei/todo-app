@@ -74,6 +74,14 @@ async def delete_task(task_id: int, session: SessionDep, token=Depends(JWTBearer
 
     
 
-@router.get('/finish/{task_id}', status_code=status.HTTP_200_OK)
+@router.patch('/finish/{task_id}', status_code=status.HTTP_200_OK, response_model=TaskRead)
 async def finish_task(task_id: int, session: SessionDep, token=Depends(JWTBearer())):
-    pass
+    t = decode_jwt(token.credentials)
+    result = await session.exec(select(Task).where(Task.id==task_id, Task.user_id==t['identifier']['id']))
+    task = result.first()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="task not found.")
+    task.is_finish = True
+    await session.commit()
+    await session.refresh(task)
+    return task

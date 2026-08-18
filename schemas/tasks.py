@@ -16,5 +16,6 @@ class TaskCreate(TaskBase):
 class TaskRead(TaskBase):
     id: int
     user: UserRead
+    is_finish: bool
     created_at: datetime
     updated_at: datetime
