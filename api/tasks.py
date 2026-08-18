@@ -74,4 +74,6 @@ async def delete_task(task_id: int, session: SessionDep, token=Depends(JWTBearer
 
     
 
-    
+@router.get('/finish/{task_id}', status_code=status.HTTP_200_OK)
+async def finish_task(task_id: int, session: SessionDep, token=Depends(JWTBearer())):
+    pass
